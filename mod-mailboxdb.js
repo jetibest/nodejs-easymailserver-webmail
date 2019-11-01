@@ -259,10 +259,20 @@ module.exports = {
 								for(var p of paths)
 								{
 									var dirlist = await fs.promises.readdir(p.path, {withFileTypes: true}).catch(()=>{}) || [];
+									
+									// add any subdirectories to paths, so that all subdirectories will be searched (i.e. the directory structure may contain a date or month, for easy filesystem management -> as to not have all email files in one directory)
+									var subdirs = dirlist.filter(entry => entry.isDirectory()).map(entry => entry.name);
+									for(var subdir of subdirs)
+									{
+										paths.push({mailbox: p.mailbox, path: path.resolve(p.path, subdir), subdir: (p.subdir || '') + '/' + subdir});
+									}
+									
+									// find email files
 									var names = dirlist.filter(entry => entry.isFile() && /\.mail\.json$/gi.test(entry.name)).map(entry => entry.name);
 									for(var name of names)
 									{
-										emails.push({mailbox: p.mailbox, filename: name, email: await mailboxdb.readJSONFile(path.resolve(p.path, name))});
+										// include the relative subdirectory path-structure to filename
+										emails.push({mailbox: p.mailbox, filename: ((p.subdir || '') + '/' + name).replace(/^\//gi, ''), email: await mailboxdb.readJSONFile(path.resolve(p.path, name))});
 									}
 								}
 								
@@ -286,7 +296,7 @@ module.exports = {
 								{
 									dir = path.resolve(path.resolve(mailboxes[0].path, '..'), mailboxdb.filterMailboxName(mailboxName));
 								}
-								var emailFile = path.resolve(dir, emailFilename.replace(/[^a-z0-9.-]+/gi, ''));
+								var emailFile = path.resolve(dir, emailFilename.replace(/[^a-z0-9./-]+/gi, '').replace(/\.\.\//gi, '/').replace(/^\//gi, ''));
 								try
 								{
 									var emailBody = JSON.parse(await fs.promises.readFile(emailFile));

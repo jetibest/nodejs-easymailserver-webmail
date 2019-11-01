@@ -143,8 +143,8 @@ return {
 						{
 							var doc = this.element.contentWindow.document;
 							doc.open();
-							doc.write(htmlCode);
-							doc.write(htmlCode);
+							// doc.write(htmlCode);
+							// doc.write(htmlCode);
 							doc.write(htmlCode);
 							doc.close();
 						}
